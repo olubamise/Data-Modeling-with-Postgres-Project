@@ -24,15 +24,35 @@ def process_song_file(cur, filepath):
     artist_data = [song_data[0][7]] + [song_data[0][8]] + [song_data[0][0]] + [song_data[0][9]] + [song_data[0][5]] 
     cur.execute(artist_table_insert, artist_data)
 
+def bulk_insert(cur, df, create_tmp_table, tmp_table, bulk_insert):
+    """
+    - Bulk inserts dataframe to destination table.
+    - Creates temporary csv
+    - Opens csv and copys into the database table
+    - Deletes temporary csv
+    """
+    tmp_csv = "./tmp.csv"
+    # create temporary csv to use bulk insert to database
+    df.to_csv(tmp_csv, header=False, index=False, sep="\t")
+    f = open(tmp_csv, "r")
+    # create temp table in order to not violate unique constraint
+    cur.execute(create_tmp_table)
+    cur.copy_from(f, tmp_table, sep="\t")
+    cur.execute(bulk_insert)
+    # Remove temporary csv
+    os.remove(tmp_csv)
+
 
 def process_log_file(cur, filepath):
     """
-    -Read the log file
-    -Filter page column of log data by NextSong to get lists of valid played songs
-    -Convert timestamp column of log data to datetime
-    -Extract the timestamp, hour, day, week of year, month, year, and weekday from the timestamp column of log data and insert time data records to time table
-    -Extract and insert users data into the users table
-    -Extract and populate the SongPlay table from the log data including song_id and artist_id columns generated from the songs and artists tables
+    - Read the log file
+    - Filter page column of log data by NextSong to get lists of valid played songs
+    - Convert timestamp column of log data to datetime
+    - Extract the timestamp, hour, day, week of year, month, year, and weekday from the timestamp column of log data and 
+      insert time data records to time table
+    - Extract and insert users data into the users table
+    - Extract and populate the SongPlay table from the log data including song_id and artist_id columns generated from 
+      the songs and artists tables
     """
     # open log file
     df = pd.read_json(filepath, lines=True)
@@ -57,6 +77,38 @@ def process_log_file(cur, filepath):
 
     # load user table
     user_df = df[["userId", "firstName", "lastName", "gender", "level"]].drop_duplicates(subset=['userId'])
+    
+    # insert user records
+    bulk_insert(
+        cur=cur,
+        df=user_df,
+        create_tmp_table=create_tmp_users_table,
+        tmp_table="tmp_users",
+        bulk_insert=users_table_bulk_insert,
+    )
+    
+    # create temporary csv to use bulk insert to database
+    songplay_df = df[
+        [
+            "ts",
+            "userId",
+            "level",
+            "sessionId",
+            "location",
+            "userAgent",
+            "song",
+            "artist",
+            "length",
+        ]
+    ]
+    
+    bulk_insert(
+        cur=cur,
+        df=songplay_df,
+        create_tmp_table=create_tmp_songplays_table,
+        tmp_table="tmp_songplays",
+        bulk_insert=songplays_table_bulk_insert,
+    )
 
     # insert user records
     for i, row in user_df.iterrows():
