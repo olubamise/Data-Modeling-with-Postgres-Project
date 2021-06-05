@@ -60,7 +60,7 @@ Time - timestamps of records in the songplays table broken down into specific un
 *weekday int*<br>
 
 #### Entity Relationship Diagrams (ERD)
-![Tux, the Linux mascot](/home/workspace/images/Data Modelling with Postgresql Project.png)<br>
+![Tux, the Linux mascot](https://github.com/olubamise/Data-Modeling-with-Postgres-Project/blob/master/images/Data%20Modelling%20with%20Postgresql%20Project.png)<br>
 
 #### ETL Process
 All the ETL that is extraction, transformation and loading of data is done in the etl.py. Data is read and processed from a single JSON file song_data and log_data. It is then loaded inito loaded into the database tables. The ETL step by step activities includes:<br>
