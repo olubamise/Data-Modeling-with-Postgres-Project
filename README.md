@@ -24,7 +24,7 @@ songplays - records log data associated with song plays. That is, songs with val
 *level varchar*<br>
 *song_id varchar*<br>
 *artist_id varchar*<br>
-session_id int*<br> 
+*session_id int*<br> 
 *location varchar*<br>
 *user_agent varchar*<br>
 
